@@ -1,0 +1,133 @@
+1. $sort //usr/share/dict/words > words
+
+2. $touch url.txt
+Make a text file called url.txt with the assignment webpage url as its contents:
+https://web.cs.ucla.edu/classes/winter19/cs35L/assign/assign2.html
+
+3. Run the following commands in terminal:
+$cat url.txt | tr -c 'A-Za-z' '[\n*]'
+  outputs the url with every non-alphabet character (complement (-c option) of upper or lower case; complement of A to Z or a to z) replaced by  a new line ([\n*]):
+  https
+  
+  
+  web
+  cs
+  ucla
+  edu
+  classes
+  winter
+  
+  
+  cs
+  
+  L
+  assign
+  assign
+  
+  html
+  
+$cat url.txt | tr -cs 'A-Za-z' '[\n*]'
+  outputs the same as the previous comand, with every non-alphabet character (complement of upper or lower case A-Z or a-z) replaced by a new line, except the -s option replaces each repeated sequence of the new line character with a single occurrence:
+  https
+  web
+  cs
+  ucla
+  edu
+  classes
+  winter
+  cs
+  L
+  assign
+  assign
+  html
+  
+$cat url.txt | tr -cs 'A-Za-z' '[\n*]' | sort
+  outputs the same as the previous command, except each line is sorted in alphabetical order because we take the result of the previous command and use it as stdin for the sort command:
+  assign
+  assign
+  classes
+  cs
+  cs
+  edu
+  html
+  https
+  L
+  ucla
+  web
+  winter
+
+$cat url.txt | tr -cs 'A-Za-z' '[\n*]' | sort -u
+  outputs the same as the previous command, with the -u option making sort only output the first instance of multiple identical lines:
+  assign
+  classes
+  cs
+  edu
+  html
+  https
+  L
+  ucla
+  web
+  winter
+
+$cat url.txt | tr -cs 'A-Za-z' '[\n*]' | sort -u | comm - words
+  outputs columns of lines for both files, comparing the sorted url.txt file and the sorted words file and placing lines unique to url.txt in the first column, lines unique to words in the second column, and shared content in the 3rd column.
+  
+$cat url.txt | tr -cs 'A-Za-z' '[\n*]' | sort -u | comm -23 - words
+  outputs the same as the previous command but only the first column, because the -23 option suppresses columns 2 and 3. Only shows "edu," "html," "https," and "ucla" because they're not dictionary words.
+  
+4. Create an empty file called hwords:
+$touch hwords
+
+download the webpage into a file called hwnwdseng.htm:
+$wget http://mauimapp.com/moolelo/hwnwdseng.htm
+
+get the hawaiian words from hwnwdseng.htm into the hwords file:
+  create a shell script file:
+  $touch buildwords
+  
+  write the following content in the buildwords shell script file:
+  #!/bin/sh
+  grep '<tr>
+      <td>.*</td>
+      <td>.*</td>
+    </tr>' hwnwdseng.htm | grep '<td>.\+</td>' | sed -n '2~2p' | sed 's/<..\?.\?>//g' | tr , '\n' | tr - '\n' | sed "s/\`/\'/g" | sed "s/^[ \t]*//g" | tr " " '\n' | sed 's/?//g' | tr '[:upper:]' '[:lower:]' | sort -u
+  
+  The above script finds all lines in the <tr> <td>Eword</td> <td>Hword</td> format, gets rid of the <tr> and </tr> in the output, skips over English words, gets rid of <td>, </td>, <u>, and </u>, replaces commas with newlines, replaces dashes with newlines, replaces grave accents with regular apostrophes, gets rid of leading tab spaces, replaces spaces with newlines, gets rid of the remaining non-Hawaiian characters (question marks), turns upper case to lower case, and sorts the final output without duplicate words.
+  
+  Bugs:
+  .+ did not work as expected, but after some experimenting I found that I needed to use the backslash character, instead using .\+ to indicate "at least one character"
+  
+  Do $chmod u+x buildwords to be able to execute the script.
+  Execute the script and put the output into hwords:
+  ./buildwords > hwords
+  
+5. Modify $tr -cs 'A-Za-z' '[\n*]' | sort -u | comm -23 - words
+  Change this shell command to the following:
+  $tr -cs "pk\'mnwlhaeiou\+" '[\n*]' | sort -u | tr '[:upper:]' '[:lower:]' | comm -23 - hwords
+  
+  Try $cat hwords | tr -cs "pk\'mnwlhaeiou\+" '[\n*]' | sort -u | tr '[:upper:]' '[:lower:]' | comm -23 - hwords
+  and it outputs nothing, so we know that everything in the dictionary is correctly spelled.
+
+6. Get the assignment webpage by doing $wget https://web.cs.ucla.edu/classes/winter19/cs35L/assign/assign2.html
+  The webpage is saved as assign2.html
+  
+  touch linenumbers.txt
+  
+  Try $cat assign2.html | tr -cs "A-Za-z" '[\n*]' | sort -u | tr '[:upper:]' '[:lower:]' | comm -23 - hwords | sort -u > linenumbers.txt
+  
+  Check the line numbers to determine how many misspelled words there are on the webpage.
+  
+  489 misspelled words
+
+7. Examples of misspelled as Hawaiian but not English:
+  variable
+  various
+  want
+  warning
+  your
+
+8. Misspelled as English but not Hawaiian:
+  Try $cat assign2.html | tr -cs "A-Za-z" '[\n*]' | sort -u | tr '[:upper:]' '[:lower:]' | comm -23 - words | comm -12 - hwords
+  halau
+  lau
+  wiki
